@@ -9,65 +9,38 @@ from pathlib import Path
 import torch
 from utils.yolov5_utils import non_max_suppression
 from utils.db_utils import SegDetectorRepresenter
-from utils.io_utils import imread, imwrite, find_all_imgs, NumpyEncoder
 from utils.imgproc_utils import letterbox, xyxy2yolo, get_yololabel_strings
 from utils.textblock import TextBlock, group_output, visualize_textblocks
 from utils.textmask import refine_mask, refine_undetected_mask, REFINEMASK_INPAINT, REFINEMASK_ANNOTATION
 from pathlib import Path
 from typing import Union
 
-def model2annotations(model_path, img_dir_list, save_dir, save_json=False):
-    if isinstance(img_dir_list, str):
-        img_dir_list = [img_dir_list]
+def load_text_detector(model_path, input_size=1024):
     cuda = torch.cuda.is_available()
     device = 'cuda' if cuda else 'cpu'
-    model = TextDetector(model_path=model_path, input_size=1024, device=device, act='leaky')  
-    imglist = []
-    for img_dir in img_dir_list:
-        imglist += find_all_imgs(img_dir, abs_path=True)
-    for img_path in tqdm(imglist):
-        imgname = osp.basename(img_path)
-        img = imread(img_path)
-        im_h, im_w = img.shape[:2]
-        imname = imgname.replace(Path(imgname).suffix, '')
-        maskname = 'mask-'+imname+'.png'
-        poly_save_path = osp.join(save_dir, 'line-' + imname + '.txt')
-        mask, mask_refined, blk_list = model(img, refine_mode=REFINEMASK_ANNOTATION, keep_undetected_mask=True)
-        polys = []
-        blk_xyxy = []
-        blk_dict_list = []
-        for blk in blk_list:
-            polys += blk.lines
-            blk_xyxy.append(blk.xyxy)
-            blk_dict_list.append(blk.to_dict())
-        blk_xyxy = xyxy2yolo(blk_xyxy, im_w, im_h)
-        if blk_xyxy is not None:
-            cls_list = [1] * len(blk_xyxy)
-            yolo_label = get_yololabel_strings(cls_list, blk_xyxy)
-        else:
-            yolo_label = ''
-        with open(osp.join(save_dir, imname+'.txt'), 'w', encoding='utf8') as f:
-            f.write(yolo_label)
+    return TextDetector(
+        model_path=model_path,
+        input_size=input_size,
+        device=device,
+        act='leaky'
+    )
 
-        # num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask)
-        # _, mask = cv2.threshold(mask, 50, 255, cv2.THRESH_BINARY)
-        # draw_connected_labels(num_labels, labels, stats, centroids)
-        # visualize_textblocks(img, blk_list)
-        # cv2.imshow('rst', img)
-        # cv2.imshow('mask', mask)
-        # cv2.imshow('mask_refined', mask_refined)
-        # cv2.waitKey(0)
-
-        if len(polys) != 0:
-            if isinstance(polys, list):
-                polys = np.array(polys)
-            polys = polys.reshape(-1, 8)
-            np.savetxt(poly_save_path, polys, fmt='%d')
-        if save_json:
-            with open(osp.join(save_dir, imname+'.json'), 'w', encoding='utf8') as f:
-                f.write(json.dumps(blk_dict_list, ensure_ascii=False, cls=NumpyEncoder))
-        imwrite(osp.join(save_dir, imgname), img)
-        imwrite(osp.join(save_dir, maskname), mask_refined)
+def model2annotations(model, img):
+    im_h, im_w = img.shape[:2]
+    mask, mask_refined, blk_list = model(img, refine_mode=REFINEMASK_ANNOTATION, keep_undetected_mask=True)
+    blk_xyxy = []
+    blk_dict_list = []
+    for blk in blk_list:
+        blk_xyxy.append(blk.xyxy)
+        blk_dict_list.append(blk.to_dict())
+    blk_xyxy = xyxy2yolo(blk_xyxy, im_w, im_h)
+    if blk_xyxy is not None:
+        cls_list = [1] * len(blk_xyxy)
+        yolo_label = get_yololabel_strings(cls_list, blk_xyxy)
+    else:
+        yolo_label = ''
+    
+    return img, mask_refined, yolo_label
 
 def preprocess_img(img, input_size=(1024, 1024), device='cpu', bgr2rgb=True, half=False, to_tensor=True):
     if bgr2rgb:
@@ -177,7 +150,6 @@ class TextDetector:
     
         return mask, mask_refined, blk_list
 
-def traverse_by_dict(img_dir_list, dict_dir):
     if isinstance(img_dir_list, str):
         img_dir_list = [img_dir_list]
     imglist = []
@@ -198,12 +170,3 @@ def traverse_by_dict(img_dir_list, dict_dir):
         cv2.imshow('im', img)
         cv2.imshow('mask', mask)
         cv2.waitKey(0)
-
-if __name__ == '__main__':
-    device = 'cpu'
-    model_path = 'data/comictextdetector.pt'
-    model_path = 'data/comictextdetector.pt.onnx'
-    img_dir = r'data/examples'
-    save_dir = r'data/backup'
-    model2annotations(model_path, img_dir, save_dir, save_json=True)
-    traverse_by_dict(img_dir, save_dir)
