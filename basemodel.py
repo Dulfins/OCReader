@@ -1,22 +1,22 @@
-
-from utils.general import CUDA, DEVICE
-from models.yolov5.yolo import Model
-import torch
-import cv2
-import numpy as np
-from models.yolov5.yolo import load_yolov5_ckpt
-from utils.yolov5_utils import fuse_conv_and_bn
-import glob
-import torch.nn as nn
-from utils.weight_init import init_weights
-from models.yolov5.common import C3, Conv
-from torchsummary import summary
-import torch.nn.functional as F
 import copy
 
+import cv2
+import torch
+import torch.nn as nn
+from torchsummary import summary
+
+from models.common import C3, Conv
+from models.yolo import load_yolov5_ckpt
+from utils.weight_init import init_weights
+from utils.yolov5_utils import fuse_conv_and_bn
+
+CUDA = True if torch.cuda.is_available() else False
+DEVICE = 'cuda' if CUDA else 'cpu'
 TEXTDET_MASK = 0
 TEXTDET_DET = 1
 TEXTDET_INFERENCE = 2
+
+torch.set_flush_denormal(True)
 
 class double_conv_up_c3(nn.Module):
     def __init__(self, in_ch, mid_ch, out_ch, act=True):
