@@ -20,11 +20,10 @@ def union_area(bboxa, bboxb):
     return (y2 - y1) * (x2 - x1)
 
 def get_yololabel_strings(clslist, labellist):
-    content = ''
+    content = []
     for cls, xywh in zip(clslist, labellist):
-        content += str(int(cls)) + ' ' + ' '.join([str(e) for e in xywh]) + '\n'
-    if len(content) != 0:
-        content = content[:-1]
+        content.append([str(e) for e in xywh])
+        # content.append(str(int(cls)) + ' ' + ' '.join([str(e) for e in xywh]))
     return content
 
 # 4 points bbox to 8 points polygon

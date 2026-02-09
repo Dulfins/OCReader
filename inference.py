@@ -29,18 +29,18 @@ def model2annotations(model, img):
     im_h, im_w = img.shape[:2]
     mask, mask_refined, blk_list = model(img, refine_mode=REFINEMASK_ANNOTATION, keep_undetected_mask=True)
     blk_xyxy = []
-    blk_dict_list = []
+    # blk_dict_list = []
     for blk in blk_list:
         blk_xyxy.append(blk.xyxy)
-        blk_dict_list.append(blk.to_dict())
-    blk_xyxy = xyxy2yolo(blk_xyxy, im_w, im_h)
-    if blk_xyxy is not None:
-        cls_list = [1] * len(blk_xyxy)
-        yolo_label = get_yololabel_strings(cls_list, blk_xyxy)
-    else:
-        yolo_label = ''
-    
-    return img, mask_refined, yolo_label
+        # blk_dict_list.append(blk.to_dict())
+
+    # blk_xyxy = xyxy2yolo(blk_xyxy, im_w, im_h)
+    # if blk_xyxy is not None:
+    #     yolo_label = get_yololabel_strings([1]*len(blk_xyxy), blk_xyxy)
+    # else:
+    #     yolo_label = []
+
+    return img, mask_refined, blk_xyxy
 
 def preprocess_img(img, input_size=(1024, 1024), device='cpu', bgr2rgb=True, half=False, to_tensor=True):
     if bgr2rgb:
@@ -149,24 +149,3 @@ class TextDetector:
             mask_refined = refine_undetected_mask(img, mask, mask_refined, blk_list, refine_mode=refine_mode)
     
         return mask, mask_refined, blk_list
-
-    if isinstance(img_dir_list, str):
-        img_dir_list = [img_dir_list]
-    imglist = []
-    for img_dir in img_dir_list:
-        imglist += find_all_imgs(img_dir, abs_path=True)
-    for img_path in tqdm(imglist):
-        imgname = osp.basename(img_path)
-        imname = imgname.replace(Path(imgname).suffix, '')
-        mask_path = osp.join(dict_dir, 'mask-'+imname+'.png')
-        with open(osp.join(dict_dir, imname+'.json'), 'r', encoding='utf8') as f:
-            blk_dict_list = json.loads(f.read())
-            blk_list = [TextBlock(**blk_dict) for blk_dict in blk_dict_list]
-        img = cv2.imread(img_path)
-        mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-        mask = refine_mask(img, mask, blk_list)
-
-        visualize_textblocks(img, blk_list)
-        cv2.imshow('im', img)
-        cv2.imshow('mask', mask)
-        cv2.waitKey(0)
