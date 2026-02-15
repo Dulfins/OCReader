@@ -29,16 +29,8 @@ def model2annotations(model, img):
     im_h, im_w = img.shape[:2]
     mask, mask_refined, blk_list = model(img, refine_mode=REFINEMASK_ANNOTATION, keep_undetected_mask=True)
     blk_xyxy = []
-    # blk_dict_list = []
     for blk in blk_list:
         blk_xyxy.append(blk.xyxy)
-        # blk_dict_list.append(blk.to_dict())
-
-    # blk_xyxy = xyxy2yolo(blk_xyxy, im_w, im_h)
-    # if blk_xyxy is not None:
-    #     yolo_label = get_yololabel_strings([1]*len(blk_xyxy), blk_xyxy)
-    # else:
-    #     yolo_label = []
 
     return img, mask_refined, blk_xyxy
 
