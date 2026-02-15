@@ -1,7 +1,7 @@
 from copy import deepcopy
 from pathlib import Path
 
-from utils.yolov5_utils import scale_img, check_version, check_anchor_order, initialize_weights, \
+from ...app.utils.yolov5_utils import scale_img, check_version, check_anchor_order, initialize_weights, \
     fuse_conv_and_bn, make_divisible
 from .common import *
 

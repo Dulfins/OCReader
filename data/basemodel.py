@@ -7,8 +7,8 @@ from torchsummary import summary
 
 from models.common import C3, Conv
 from models.yolo import load_yolov5_ckpt
-from utils.weight_init import init_weights
-from utils.yolov5_utils import fuse_conv_and_bn
+from ..app.utils.weight_init import init_weights
+from ..app.utils.yolov5_utils import fuse_conv_and_bn
 
 CUDA = True if torch.cuda.is_available() else False
 DEVICE = 'cuda' if CUDA else 'cpu'
