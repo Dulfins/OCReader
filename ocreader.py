@@ -1,4 +1,6 @@
 from fastapi import FastAPI, UploadFile
+from schemas import BatchResponse, ImageResult, TextBox
+from typing import List
 from PIL import Image
 import numpy as np
 
@@ -43,27 +45,32 @@ def to_python_boxes(boxes):
 
 
 
-@app.post("/process_image")
-async def process_image(file: UploadFile):
-    img_pil = Image.open(file.file).convert("RGB")
-    img_np = np.array(img_pil)
+@app.post("/process_image", response_model=BatchResponse)
+async def process_image(files: List[UploadFile]):
+    output = []
+    
+    for file in files:
+        img_pil = Image.open(file.file).convert("RGB")
+        img_np = np.array(img_pil)
 
-    boxes = detect_text(img_np)
-    boxes = to_python_boxes(boxes)
+        boxes = detect_text(img_np)
+        boxes = to_python_boxes(boxes)
 
-    texts = ocr_boxes(img_pil, boxes)
-    translations = translate(texts)
+        texts = ocr_boxes(img_pil, boxes)
+        translations = translate(texts)
 
-    results = []
-    for box, jp, en in zip(boxes, texts, translations):
-        results.append({
-            "box": box,
-            "jp": jp,
-            "en": en
-        })
+        results = [
+            TextBox(box=box, jp=jp, en=en)
+            for box, jp, en in zip(boxes, texts, translations)
+        ]
 
-    return {
-        "width": img_pil.width,
-        "height": img_pil.height,
-        "results": results
-    }
+        output.append(
+            ImageResult(
+                filename=file.filename,
+                width=img_pil.width,
+                height=img_pil.height,
+                results=results
+            )
+        )
+
+    return {"images": output}
