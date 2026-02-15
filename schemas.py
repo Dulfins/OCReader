@@ -7,9 +7,9 @@ class TextBox(BaseModel):
     en: str
 
 class ImageResult(BaseModel):
-    filename: str
     width: int
     height: int
+    image_base64: str
     results: List[TextBox]
 
 class BatchResponse(BaseModel):

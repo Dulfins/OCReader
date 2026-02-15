@@ -39,6 +39,10 @@ def translate_ja_to_en(sentences):
     for r in results:
         tokens = r.hypotheses[0]
         text = sp.decode(tokens)
+
+        # Cleaning
+        text = " ".join(text.split("▁")).strip()
+
         translations.append(text)
 
     return translations
