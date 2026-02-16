@@ -3,15 +3,11 @@ import copy
 import cv2
 import torch
 import torch.nn as nn
-from torchsummary import summary
 
 from .models.common import C3, Conv
 from .models.yolo import load_yolov5_ckpt
-from utils.weight_init import init_weights
 from utils.yolov5_utils import fuse_conv_and_bn
 
-CUDA = True if torch.cuda.is_available() else False
-DEVICE = 'cuda' if CUDA else 'cpu'
 TEXTDET_MASK = 0
 TEXTDET_DET = 1
 TEXTDET_INFERENCE = 2
@@ -76,9 +72,6 @@ class UnetHead(nn.Module):
                 return mask
             else:
                 return mask, [f80, f40, u40]
-            
-    def init_weight(self, init_func):
-        self.apply(init_func)
 
 class DBHead(nn.Module):
     def __init__(self, in_channels, k = 50, shrink_with_sigmoid=True, act=True):
@@ -123,9 +116,6 @@ class DBHead(nn.Module):
                 return self.step_function(shrink_maps, threshold_maps)
             else:
                 return torch.cat((shrink_maps, threshold_maps), dim=1)
-
-    def init_weight(self, init_func):
-        self.apply(init_func)
 
     def _init_thresh(self, inner_channels, serial=False, smooth=False, bias=False):
         in_channels = inner_channels
@@ -173,29 +163,6 @@ class TextDetector(nn.Module):
         self.backbone = yolov5s_backbone
         self.dbnet = None
         self.forward_mode = forward_mode
-
-    def train_mask(self):
-        self.forward_mode = TEXTDET_MASK
-        self.backbone.eval()
-        self.seg_net.train()
-
-    def initialize_db(self, unet_weights):
-        self.dbnet = DBHead(64, act=self.act)
-        self.seg_net.load_state_dict(torch.load(unet_weights, map_location='cpu')['weights'])
-        self.dbnet.init_weight(init_weights)
-        self.dbnet.upconv3 = copy.deepcopy(self.seg_net.upconv3)
-        self.dbnet.upconv4 = copy.deepcopy(self.seg_net.upconv4)
-        del self.seg_net.upconv3
-        del self.seg_net.upconv4
-        del self.seg_net.upconv5
-        del self.seg_net.upconv6
-        # del self.seg_net.conv_mask
-    
-    def train_db(self):
-        self.forward_mode = TEXTDET_DET
-        self.backbone.eval()
-        self.seg_net.eval()
-        self.dbnet.train()
 
     def forward(self, x):
         forward_mode = self.forward_mode
@@ -254,20 +221,4 @@ class TextDetBaseDNN:
         self.model.setInput(blob)
         blks, mask, lines_map  = self.model.forward(self.uoln)
         return blks, mask, lines_map
-
-if __name__ == '__main__':
-    device = 'cuda'
-    weights = r'data/yolov5sblk.ckpt'
-
-    # yolov5s_backbone = load_yolov5_ckpt(weights=weights, map_location='cpu')
-
-    model = TextDetector(weights, map_location=DEVICE)
-    model.to(DEVICE)
-    model.train_mask()
-    summary(model, (3, 640, 640), device=DEVICE)
-
-    # model.initialize_db(unet_weights='data/unet_head.pt')
-    # model.train_db()
-    # summary(model, (3, 640, 640), device=DEVICE)
-
 

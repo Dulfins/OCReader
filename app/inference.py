@@ -1,7 +1,4 @@
-import json
 from data.basemodel import TextDetBase, TextDetBaseDNN
-import os.path as osp
-from tqdm import tqdm
 import numpy as np
 import cv2
 import torch
@@ -9,8 +6,8 @@ from pathlib import Path
 import torch
 from utils.yolov5_utils import non_max_suppression
 from utils.db_utils import SegDetectorRepresenter
-from utils.imgproc_utils import letterbox, xyxy2yolo, get_yololabel_strings
-from utils.textblock import TextBlock, group_output, visualize_textblocks
+from utils.imgproc_utils import letterbox
+from utils.textblock import group_output
 from utils.textmask import refine_mask, refine_undetected_mask, REFINEMASK_INPAINT, REFINEMASK_ANNOTATION
 from pathlib import Path
 from typing import Union
@@ -82,7 +79,7 @@ class TextDetector:
     lang_list = ['eng', 'ja', 'unknown']
     langcls2idx = {'eng': 0, 'ja': 1, 'unknown': 2}
 
-    def __init__(self, model_path, input_size=1024, device='cpu', half=False, nms_thresh=0.35, conf_thresh=0.4, mask_thresh=0.3, act='leaky'):
+    def __init__(self, model_path, input_size=1024, device='cpu', half=False, nms_thresh=0.35, conf_thresh=0.4, act='leaky'):
         super(TextDetector, self).__init__()
         cuda = device == 'cuda'
 

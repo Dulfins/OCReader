@@ -1,5 +1,5 @@
 from fastapi import FastAPI, UploadFile
-from .schemas import BatchResponse, ImageResult, TextBox
+from schemas import BatchResponse, ImageResult, TextBox
 from typing import List
 from io import BytesIO
 from PIL import Image
@@ -8,8 +8,8 @@ import base64
 import cv2
 
 
-from .inference import model2annotations, load_text_detector
-from .sugoi_translator.translator import translate_ja_to_en
+from inference import model2annotations, load_text_detector
+from sugoi_translator.translator import translate_ja_to_en
 from manga_ocr import MangaOcr
 
 app = FastAPI()

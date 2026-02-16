@@ -2,8 +2,8 @@ import ctranslate2
 import sentencepiece as spm
 from functools import lru_cache
 
-MODEL_DIR = "sugoi_translator/model"
-SPM_PATH = "sugoi_translator/spm.ja.nopretok.model"
+MODEL_DIR = r"app/sugoi_translator/model"
+SPM_PATH = r"app/sugoi_translator/spm.ja.nopretok.model"
 
 @lru_cache(maxsize=1)
 def load_translator():

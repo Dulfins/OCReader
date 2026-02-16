@@ -64,7 +64,6 @@ class Model(nn.Module):
             self.yaml = cfg  # model dict
         else:  # is *.yaml
             import yaml  # for torch hub
-            self.yaml_file = Path(cfg).name
             with open(cfg, encoding='ascii', errors='ignore') as f:
                 self.yaml = yaml.safe_load(f)  # model dict
 
@@ -179,11 +178,6 @@ class Model(nn.Module):
             b.data[:, 5:] += math.log(0.6 / (m.nc - 0.999999)) if cf is None else torch.log(cf / cf.sum())  # cls
             mi.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
-    def _print_biases(self):
-        m = self.model[-1]  # Detect() module
-        for mi in m.m:  # from
-            b = mi.bias.detach().view(m.na, -1).T  # conv.bias(255) to (3,85)
-
     def fuse(self):  # fuse model Conv2d() + BatchNorm2d() layers
         for m in self.model.modules():
             if isinstance(m, (Conv, DWConv)) and hasattr(m, 'bn'):
@@ -222,7 +216,7 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
             except NameError:
                 pass
 
-        n = n_ = max(round(n * gd), 1) if n > 1 else n  # depth gain
+        n = max(round(n * gd), 1) if n > 1 else n  # depth gain
         if m in [Conv, GhostConv, Bottleneck, GhostBottleneck, SPP, SPPF, DWConv, Focus,
                  BottleneckCSP, C3, C3TR, C3SPP, C3Ghost]:
             c1, c2 = ch[f], args[0]
@@ -259,30 +253,6 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
             ch = []
         ch.append(c2)
     return nn.Sequential(*layers), sorted(save)
-
-def load_yolov5(weights, map_location='cuda', fuse=True, inplace=True, out_indices=[1, 3, 5, 7, 9]):
-    if isinstance(weights, str):
-        ckpt = torch.load(weights, map_location=map_location)  # load
-    else:
-        ckpt = weights
-    
-    if fuse:
-        model = ckpt['model'].float().fuse().eval()  # FP32 model
-    else:
-        model = ckpt['model'].float().eval()  # without layer fuse
-
-    # Compatibility updates
-    for m in model.modules():
-        if type(m) in [nn.Hardswish, nn.LeakyReLU, nn.ReLU, nn.ReLU6, nn.SiLU, Detect, Model]:
-            m.inplace = inplace  # pytorch 1.7.0 compatibility
-            if type(m) is Detect:
-                if not isinstance(m.anchor_grid, list):  # new Detect Layer compatibility
-                    delattr(m, 'anchor_grid')
-                    setattr(m, 'anchor_grid', [torch.zeros(1)] * m.nl)
-        elif type(m) is Conv:
-            m._non_persistent_buffers_set = set()  # pytorch 1.6.0 compatibility
-    model.out_indices = out_indices
-    return model
 
 @torch.no_grad()
 def load_yolov5_ckpt(weights, map_location='cpu', fuse=True, inplace=True, out_indices=[1, 3, 5, 7, 9]):
