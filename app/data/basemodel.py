@@ -6,7 +6,7 @@ import torch.nn as nn
 
 from .models.common import C3, Conv
 from .models.yolo import load_yolov5_ckpt
-from utils.yolov5_utils import fuse_conv_and_bn
+from ..utils.yolov5_utils import fuse_conv_and_bn
 
 TEXTDET_MASK = 0
 TEXTDET_DET = 1

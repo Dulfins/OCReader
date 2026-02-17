@@ -1,14 +1,14 @@
-from data.basemodel import TextDetBase, TextDetBaseDNN
+from .data.basemodel import TextDetBase, TextDetBaseDNN
 import numpy as np
 import cv2
 import torch
 from pathlib import Path
 import torch
-from utils.yolov5_utils import non_max_suppression
-from utils.db_utils import SegDetectorRepresenter
-from utils.imgproc_utils import letterbox
-from utils.textblock import group_output
-from utils.textmask import refine_mask, refine_undetected_mask, REFINEMASK_INPAINT, REFINEMASK_ANNOTATION
+from .utils.yolov5_utils import non_max_suppression
+from .utils.db_utils import SegDetectorRepresenter
+from .utils.imgproc_utils import letterbox
+from .utils.textblock import group_output
+from .utils.textmask import refine_mask, refine_undetected_mask, REFINEMASK_INPAINT, REFINEMASK_ANNOTATION
 from pathlib import Path
 from typing import Union
 

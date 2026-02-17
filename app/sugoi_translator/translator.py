@@ -1,15 +1,18 @@
 import ctranslate2
+from pathlib import Path
 import sentencepiece as spm
 from functools import lru_cache
 
-MODEL_DIR = r"app/sugoi_translator/model"
-SPM_PATH = r"app/sugoi_translator/spm.ja.nopretok.model"
+BASE_DIR = Path(__file__).resolve().parent
+
+MODEL_DIR = BASE_DIR  / "model"
+SPM_PATH = BASE_DIR  / "spm.ja.nopretok.model"
 
 @lru_cache(maxsize=1)
 def load_translator():
     print("Loading CTranslate2 model...")
     translator = ctranslate2.Translator(
-        MODEL_DIR,
+        str(MODEL_DIR),
         device="cpu"
     )
     print("Model loaded successfully")
@@ -19,7 +22,7 @@ def load_translator():
 def load_sp():
     """Load SentencePiece once (cached)."""
     sp = spm.SentencePieceProcessor()
-    sp.load(SPM_PATH)
+    sp.load(str(SPM_PATH))
     return sp
 
 def translate_ja_to_en(sentences):
