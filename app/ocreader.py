@@ -3,6 +3,7 @@ from .schemas import BatchResponse, ImageResult, TextBox
 from typing import List
 from io import BytesIO
 from PIL import Image
+from pathlib import Path
 import numpy as np
 import base64
 import cv2
@@ -14,8 +15,8 @@ from manga_ocr import MangaOcr
 
 app = FastAPI()
 
-model_path = r'app/data/comictextdetector.pt'
-model = load_text_detector(model_path)
+TEXT_DET_MODEL = Path(__file__).parent / 'data/comictextdetector.pt'
+model = load_text_detector(str(TEXT_DET_MODEL))
 
 ocr = MangaOcr()
 
