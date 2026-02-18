@@ -180,4 +180,3 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 /app/sugoi_translator/model
-app/data/comictextdetector.pt
