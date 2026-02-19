@@ -10,6 +10,7 @@ import cv2
 
 
 from .inference import model2annotations, load_text_detector
+from .draw_image import render_translation_on_image
 from .sugoi_translator.translator import translate_ja_to_en
 from manga_ocr import MangaOcr
 
@@ -36,13 +37,12 @@ def ocr_boxes(img, boxes):
 def translate(texts):
     return translate_ja_to_en(texts)
 
-def cv2_to_base64(img_bgr: np.ndarray) -> str:
-    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-    pil_img = Image.fromarray(img_rgb)
-
+def to_base64(img: np.ndarray) -> str:
+    pil_img = Image.fromarray(img)
     buf = BytesIO()
     pil_img.save(buf, format="PNG")
     return base64.b64encode(buf.getvalue()).decode("utf-8")
+
 
 # For json output, convert numpy int to python int
 def to_python_boxes(boxes):
@@ -56,27 +56,52 @@ def to_python_boxes(boxes):
         ])
     return out
 
-def inpaint_image(image_np, mask):
-    inpainted = cv2.inpaint(image_np, mask, 3, cv2.INPAINT_TELEA)
-    return inpainted
+def inpaint_image(image_rgb: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    image_bgr = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
+
+    # Clean mask (helps residue)
+    kernel = np.ones((3, 3), np.uint8)
+    mask = cv2.dilate(mask, kernel, iterations=2)
+
+    inpainted_bgr = cv2.inpaint(
+        image_bgr,
+        mask,
+        inpaintRadius=5,
+        flags=cv2.INPAINT_TELEA
+    )
+
+    # Back to RGB for PIL rendering
+    return cv2.cvtColor(inpainted_bgr, cv2.COLOR_BGR2RGB)
+
 
 
 @app.post("/process_image", response_model=BatchResponse)
 async def process_image(files: List[UploadFile]):
     output = []
-    
+
     for file in files:
         img_pil = Image.open(file.file).convert("RGB")
-        img_np = np.array(img_pil)
+        img_rgb = np.array(img_pil)
 
-        mask, boxes = detect_text(img_np)
+        mask, boxes = detect_text(img_rgb)
         boxes = to_python_boxes(boxes)
 
         texts = ocr_boxes(img_pil, boxes)
         translations = translate(texts)
 
-        inpainted_image = inpaint_image(img_np, mask)
-        image_base64 = cv2_to_base64(inpainted_image)
+        # --- inpaint ---
+        inpainted_rgb = inpaint_image(img_rgb, mask)
+
+        # --- render translations ON inpainted image ---
+        translated_img = render_translation_on_image(
+            image_np=inpainted_rgb,
+            boxes=boxes,
+            translations=translations,
+            font_path="app/fonts/animeace2_bld.ttf"
+        )
+
+        # --- encode final image ---
+        image_base64 = to_base64(np.array(translated_img))
 
         results = [
             TextBox(box=box, jp=jp, en=en)
